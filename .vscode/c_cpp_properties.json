@@ -4,7 +4,9 @@
             "name": "Linux",
             "forcedInclude": [
                 "${workspaceFolder}/CMSIS/Core/Include/cmsis_gcc.h",
-                "${workspaceFolder}/CMSIS/Core/Include/m-profile/cmsis_gcc_m.h"
+                "${workspaceFolder}/CMSIS/Core/Include/m-profile/cmsis_gcc_m.h",
+                "${workspaceFolder}/ThreadX/ports/cortex_m4/gnu/inc/tx_port.h",
+                "${workspaceFolder}/ThreadX/common/inc/tx_api.h"
             ],
             "includePath": [
                 "${workspaceFolder}/**",
