@@ -23,11 +23,9 @@
 @
     .global     _tx_thread_system_stack_ptr
     .global     _tx_initialize_unused_memory
-    .global     __RAM_segment_used_end__
     .global     _tx_timer_interrupt
+    .global     __RAM_segment_used_end__
     .global     __main
-    .global     __tx_SVCallHandler
-    .global     __tx_PendSVHandler
     .global     _vectors
     .global     __tx_NMIHandler                     @ NMI
     .global     __tx_BadHandler                     @ HardFault
@@ -38,8 +36,8 @@
     .global     __tx_IntHandler                     @ Int 0
 @
 @
-SYSTEM_CLOCK      =   6000000
-SYSTICK_CYCLES    =   ((SYSTEM_CLOCK / 100) -1)
+SYSTEM_CLOCK      =   4000000
+SYSTICK_CYCLES    =   ((SYSTEM_CLOCK / 100) - 1)
 
     .text 32
     .align 4
@@ -102,20 +100,23 @@ _tx_initialize_low_level:
 @    /* Set base of available memory to end of non-initialised RAM area.  */
 @
     LDR     r0, =_tx_initialize_unused_memory       @ Build address of unused memory pointer
-    LDR     r1, =__RAM_segment_used_end__           @ Build first free address
+    @ LDR     r1, =__RAM_segment_used_end__           @ Build first free address
+    LDR     r1, =__StackTop                         @ Build first free address
     ADD     r1, r1, #4                              @
     STR     r1, [r0]                                @ Setup first unused memory pointer
 @
 @    /* Setup Vector Table Offset Register.  */
 @
     MOV     r0, #0xE000E000                         @ Build address of NVIC registers
-    LDR     r1, =_vectors                           @ Pickup address of vector table
+    @ LDR     r1, =_vectors                           @ Pickup address of vector table
+    LDR     r1, =__Vectors                          @ Pickup address of vector table
     STR     r1, [r0, #0xD08]                        @ Set vector table address
 @
 @    /* Set system stack pointer from vector value.  */
 @
     LDR     r0, =_tx_thread_system_stack_ptr        @ Build address of system stack pointer
-    LDR     r1, =_vectors                           @ Pickup address of vector table
+    @ LDR     r1, =_vectors                           @ Pickup address of vector table
+    LDR     r1, =__Vectors                          @ Pickup address of vector table
     LDR     r1, [r1]                                @ Pickup reset stack pointer
     STR     r1, [r0]                                @ Save system stack pointer
 @
@@ -129,7 +130,12 @@ _tx_initialize_low_level:
 @    /* Configure SysTick for 100Hz clock, or 16384 cycles if no reference.  */
 @
     MOV     r0, #0xE000E000                         @ Build address of NVIC registers
-    LDR     r1, =SYSTICK_CYCLES
+    @ LDR     r1, =SYSTICK_CYCLES
+    LDR     r2, =SystemCoreClock                    @ Build address of SystemCoreClock
+    LDR     r1, [r2]                                @ Pickup the current value
+    MOV     r3, #100                                @ SysTick Reload Value = ((SystemCoreClock / 100) - 1)
+    UDIV    r1, r1, r3
+    SUB     r1, r1, #1
     STR     r1, [r0, #0x14]                         @ Setup SysTick Reload Value
     MOV     r1, #0x7                                @ Build SysTick Control Enable Value
     STR     r1, [r0, #0x10]                         @ Setup SysTick Control
@@ -156,10 +162,10 @@ _tx_initialize_low_level:
 
 @/* Define shells for each of the unused vectors.  */
 @
-    .global  __tx_BadHandler
-    .thumb_func
-__tx_BadHandler:
-    B       __tx_BadHandler
+@     .global  Default_Handler
+@     .thumb_func
+@ Default_Handler:
+@     B       Default_Handler
 
 @ /* added to catch the hardfault */
 

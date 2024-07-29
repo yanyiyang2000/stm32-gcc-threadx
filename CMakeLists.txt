@@ -13,14 +13,16 @@ set(CMAKE_EXECUTABLE_SUFFIX_ASM .elf)
 set(CMAKE_EXECUTABLE_SUFFIX_C   .elf)
 
 project(
-    test
+    demo
     LANGUAGES C ASM
 )
 
 file(
     GLOB SRC
     ${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32L4xx/Source/system_stm32l4xx.c
-    ${CMAKE_CURRENT_LIST_DIR}/User/source/threadx/*.S
+    ${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32L4xx/Source/gcc/startup_stm32l4xx.c
+    ${CMAKE_CURRENT_LIST_DIR}/ThreadX/ports/cortex_m4/gnu/example_build/tx_initialize_low_level.S
+    ${CMAKE_CURRENT_LIST_DIR}/User/source/crt0.S
     ${CMAKE_CURRENT_LIST_DIR}/User/source/gpio_config.c
     ${CMAKE_CURRENT_LIST_DIR}/User/source/clock_config.c
     ${CMAKE_CURRENT_LIST_DIR}/User/source/main.c
@@ -49,28 +51,29 @@ target_compile_definitions(
 target_compile_options(
     ${CMAKE_PROJECT_NAME}
     PUBLIC
+    -mthumb
     -mcpu=cortex-m4
     -mfpu=fpv4-sp-d16
-    -mthumb
     -O0
     -g3
-    -Wall
-    -ffunction-sections
-    -fdata-sections
+    -Wall                       # enable all warnings
+    -Wno-missing-attributes     # disable warning about missing attributes
+    -ffunction-sections         # place each function in its own named section in the output object file
+    -fdata-sections             # place each data in its own named section in the output object file
 )
 
 target_link_options(
     ${CMAKE_PROJECT_NAME}
     PUBLIC
+    -mthumb
     -mcpu=cortex-m4
     -mfpu=fpv4-sp-d16
-    -mthumb
-    -nostartfiles               # use custom startup file
-    --specs=nano.specs          # use libc_nano.a instead of libc.a
-    --specs=nosys.specs         # use libnosys.a
+    -nostartfiles               # use custom crt0.S (otherwise newlib's crt0.S will be used)
+    --specs=nano.specs          # use libc_nano.a (otherwise libc.a will be used)
+    --specs=nosys.specs         # use libnosys.a (provides stub syscalls such as `_exit` used by the custom crt0.S)
     -Wl,--gc-sections           # enable garbage collection of unused sections
     -Wl,--trace                 # print name of input files (use --verbose for more detailed information)
     -Wl,--print-memory-usage    # print memory usage
     # -Wl,--print-map             # print memory map
-    -T "${CMAKE_CURRENT_LIST_DIR}/User/source/threadx/threadx.ld"
+    -T "${PROJECT_SOURCE_DIR}/CMSIS/Device/ST/STM32L4xx/Config/stm32l4xx_gcc.ld"
 )
